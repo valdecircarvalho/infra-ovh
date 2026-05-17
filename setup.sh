@@ -77,14 +77,17 @@ setup_ssh_key() {
     chmod 600 /root/.ssh/authorized_keys
     ok "Chave SSH configurada para root"
 
-    # Adiciona para o usuário admin
-    local USER_SSH="/home/${ADMIN_USER}/.ssh"
-    mkdir -p "$USER_SSH" && chmod 700 "$USER_SSH"
-    touch "${USER_SSH}/authorized_keys"
-    add_keys_to "${USER_SSH}/authorized_keys"
-    chmod 600 "${USER_SSH}/authorized_keys"
-    chown -R "${ADMIN_USER}:${ADMIN_USER}" "$USER_SSH"
-    ok "Chave SSH configurada para $ADMIN_USER"
+    # Adiciona para todos os usuários com home em /home
+    for u in "$ADMIN_USER" administrator; do
+        id -u "$u" &>/dev/null || continue
+        local USER_SSH="/home/${u}/.ssh"
+        mkdir -p "$USER_SSH" && chmod 700 "$USER_SSH"
+        touch "${USER_SSH}/authorized_keys"
+        add_keys_to "${USER_SSH}/authorized_keys"
+        chmod 600 "${USER_SSH}/authorized_keys"
+        chown -R "${u}:${u}" "$USER_SSH"
+        ok "Chave SSH configurada para $u"
+    done
 }
 
 # ─────────────────────────────────────────────
