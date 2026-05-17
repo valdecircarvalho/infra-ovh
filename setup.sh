@@ -21,6 +21,10 @@ setup_packages() {
     log "Instalando pacotes essenciais..."
     export DEBIAN_FRONTEND=noninteractive
     apt-get update -q
+    apt-get upgrade -yq \
+        -o Dpkg::Options::="--force-confdef" \
+        -o Dpkg::Options::="--force-confold"
+    ok "Sistema atualizado"
     apt-get install -yq \
         git curl wget unzip zip rsync \
         net-tools iputils-ping dnsutils nmap traceroute tcpdump \
