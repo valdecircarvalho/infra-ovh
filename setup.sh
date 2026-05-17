@@ -60,11 +60,15 @@ setup_user() {
 
     usermod -aG sudo,adm,systemd-journal "$ADMIN_USER" 2>/dev/null || true
 
-    # Diretório padrão para containers
+    # Grupo e diretório compartilhado para containers
+    groupadd -f containers
+    for u in "$ADMIN_USER" administrator; do
+        id -u "$u" &>/dev/null && usermod -aG containers "$u" || true
+    done
     mkdir -p /opt/containers
-    chown "${ADMIN_USER}:${ADMIN_USER}" /opt/containers
-    chmod 755 /opt/containers
-    ok "/opt/containers criado"
+    chown root:containers /opt/containers
+    chmod 775 /opt/containers
+    ok "/opt/containers criado (grupo: containers)"
 }
 
 # ─────────────────────────────────────────────
