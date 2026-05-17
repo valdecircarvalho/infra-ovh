@@ -123,13 +123,18 @@ setup_disk_expand() {
     fi
 
     # Força o kernel a re-ler o tamanho do disco (ESXi hot-extend)
+    # Método 1: rescan do dispositivo específico
     local SCSI_DEV
     SCSI_DEV=$(basename "$DISK")
-    if [[ -f "/sys/class/block/${SCSI_DEV}/device/rescan" ]]; then
+    [[ -f "/sys/class/block/${SCSI_DEV}/device/rescan" ]] && \
         echo 1 > "/sys/class/block/${SCSI_DEV}/device/rescan"
-        sleep 2
-        ok "Rescan SCSI concluído"
-    fi
+
+    # Método 2: rescan de todos os hosts SCSI (mais confiável no ESXi)
+    for h in /sys/class/scsi_host/*/scan; do
+        echo "- - -" > "$h" 2>/dev/null || true
+    done
+    sleep 3
+    ok "Rescan SCSI concluído"
 
     # Valida se há espaço para expandir antes de alterar qualquer coisa
     if ! growpart --dry-run "$DISK" "$PART_NUM" &>/dev/null; then
