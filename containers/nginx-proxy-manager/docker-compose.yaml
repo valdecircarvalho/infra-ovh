@@ -1,0 +1,46 @@
+services:
+  app:
+    container_name: nginx-proxy-manager
+    image: 'jc21/nginx-proxy-manager:latest'
+    restart: unless-stopped
+    ports:
+      - '80:80'   # HTTP
+      - '443:443' # HTTPS
+      - '81:81'   # Admin
+    environment:
+      TZ: "America/Sao_Paulo"
+      DB_POSTGRES_HOST: 'db'
+      DB_POSTGRES_PORT: '5432'
+      DB_POSTGRES_USER: '${POSTGRES_USER}'
+      DB_POSTGRES_PASSWORD: '${POSTGRES_PASSWORD}'
+      DB_POSTGRES_NAME: '${POSTGRES_DB}'
+      DISABLE_IPV6: 'true'
+      INITIAL_ADMIN_EMAIL: '${INITIAL_ADMIN_EMAIL}'
+      INITIAL_ADMIN_PASSWORD: '${INITIAL_ADMIN_PASSWORD}'
+    volumes:
+      - ./data:/data
+      - ./letsencrypt:/etc/letsencrypt
+    healthcheck:
+      test: ["CMD", "/usr/bin/check-health"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+    depends_on:
+      db:
+        condition: service_healthy
+
+  db:
+    container_name: nginx-proxy-manager-db
+    image: postgres:17
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: '${POSTGRES_USER}'
+      POSTGRES_PASSWORD: '${POSTGRES_PASSWORD}'
+      POSTGRES_DB: '${POSTGRES_DB}'
+    volumes:
+      - ./postgresql:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
