@@ -139,31 +139,30 @@ setup_disk_expand() {
     sleep 3
     ok "Rescan SCSI concluído"
 
-    # Valida se há espaço para expandir antes de alterar qualquer coisa
-    if ! growpart --dry-run "$DISK" "$PART_NUM" &>/dev/null; then
-        ok "Disco já no tamanho máximo — nenhuma alteração necessária"
-        df -h /
-        return 0
+    # Passo 1 — Expande a partição (só se houver espaço não alocado no disco)
+    if growpart --dry-run "$DISK" "$PART_NUM" &>/dev/null; then
+        growpart "$DISK" "$PART_NUM" && ok "Partição ${DISK}${PART_NUM} expandida"
+        pvresize "$PV_DEV"           && ok "PV $PV_DEV redimensionado"
+    else
+        ok "Partição já ocupa todo o disco — pulando growpart/pvresize"
     fi
-    log "Espaço disponível detectado — prosseguindo com a expansão"
 
-    # 1 — Expande a partição
-    growpart "$DISK" "$PART_NUM" && ok "Partição ${DISK}${PART_NUM} expandida"
+    # Passo 2 — Estende o LV se o VG tiver espaço livre (instalador Ubuntu deixa ~50% livre por padrão)
+    local VG_FREE
+    VG_FREE=$(vgs --noheadings --units b -o vg_free "$VG_NAME" 2>/dev/null | tr -d ' B')
+    if [[ "${VG_FREE:-0}" -gt 104857600 ]]; then   # > 100 MB
+        lvextend -l +100%FREE "$ROOT_DEV" && ok "LV $ROOT_DEV expandido"
 
-    # 2 — Atualiza o PV para enxergar o novo tamanho
-    pvresize "$PV_DEV" && ok "PV $PV_DEV redimensionado"
-
-    # 3 — Estende o LV com todo o espaço livre disponível
-    lvextend -l +100%FREE "$ROOT_DEV" && ok "LV $ROOT_DEV expandido"
-
-    # 4 — Expande o filesystem
-    local FS_TYPE
-    FS_TYPE=$(df -T / | tail -1 | awk '{print $2}')
-    case "$FS_TYPE" in
-        ext4|ext3) resize2fs "$ROOT_DEV" && ok "Filesystem $FS_TYPE expandido" ;;
-        xfs)       xfs_growfs /          && ok "Filesystem XFS expandido"       ;;
-        *)         warn "Tipo de filesystem desconhecido: $FS_TYPE — expanda manualmente" ;;
-    esac
+        local FS_TYPE
+        FS_TYPE=$(df -T / | tail -1 | awk '{print $2}')
+        case "$FS_TYPE" in
+            ext4|ext3) resize2fs "$ROOT_DEV" && ok "Filesystem $FS_TYPE expandido" ;;
+            xfs)       xfs_growfs /          && ok "Filesystem XFS expandido"       ;;
+            *)         warn "Tipo de filesystem desconhecido: $FS_TYPE — expanda manualmente" ;;
+        esac
+    else
+        ok "VG sem espaço livre — LV já no tamanho máximo"
+    fi
 
     log "Disco após expansão:"
     df -h /
