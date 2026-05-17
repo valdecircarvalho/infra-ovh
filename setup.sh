@@ -17,14 +17,20 @@ die()  { echo -e "${RED}[ERRO]${NC} $*" >&2; exit 1; }
 [[ $EUID -eq 0 ]] || die "Execute com sudo: curl -fsSL ... | sudo bash"
 
 # ─────────────────────────────────────────────
-setup_packages() {
-    log "Instalando pacotes essenciais..."
+setup_update() {
+    log "Atualizando sistema..."
     export DEBIAN_FRONTEND=noninteractive
     apt-get update -q
     apt-get upgrade -yq \
         -o Dpkg::Options::="--force-confdef" \
         -o Dpkg::Options::="--force-confold"
     ok "Sistema atualizado"
+}
+
+# ─────────────────────────────────────────────
+setup_packages() {
+    log "Instalando pacotes essenciais..."
+    export DEBIAN_FRONTEND=noninteractive
     apt-get install -yq \
         git curl wget unzip zip rsync \
         net-tools iputils-ping dnsutils nmap traceroute tcpdump \
@@ -264,6 +270,7 @@ main() {
     echo "================================================="
     echo ""
 
+    setup_update
     setup_packages
     setup_user
     setup_ssh_key
