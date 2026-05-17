@@ -176,7 +176,7 @@ setup_git() {
     sudo -u "$ADMIN_USER" git config --global init.defaultBranch main
     sudo -u "$ADMIN_USER" git config --global pull.rebase false
     sudo -u "$ADMIN_USER" git config --global core.editor nano
-    ok "Git configurado (user: Valdecir Carvalho <vcarvalho@vertigo.com.br>)"
+    ok "Git configurado (user: Valdecir Carvalho <valdecir.carvalho@outlook.com>)"
 }
 
 # ─────────────────────────────────────────────
