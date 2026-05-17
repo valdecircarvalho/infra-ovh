@@ -59,6 +59,12 @@ setup_user() {
     ok "sudo sem senha configurado para $ADMIN_USER"
 
     usermod -aG sudo,adm,systemd-journal "$ADMIN_USER" 2>/dev/null || true
+
+    # Diretório padrão para containers
+    mkdir -p /opt/containers
+    chown "${ADMIN_USER}:${ADMIN_USER}" /opt/containers
+    chmod 755 /opt/containers
+    ok "/opt/containers criado"
 }
 
 # ─────────────────────────────────────────────
